@@ -128,7 +128,7 @@ class Ethereum_model(Machine_Learning):
 
         Define os atributos modelo_preco e y_pred_tot da classe.
         """
-        self.modelo_preco = ARIMA(self.df.close, freq="D", order=(2, 1, 3)).fit()
+        self.modelo_preco = ARIMA(self.df.close, freq="D", order=(1, 1, 3)).fit()
         self.y_pred_tot = self.modelo_preco.predict()
 
     def preve_valores(self, X):
@@ -194,7 +194,7 @@ class Solana_model(Machine_Learning):
         - modelo_preco: O modelo ARIMA treinado.
         - y_pret_tot: Previsões do modelo para os dados de treino.
         """
-        self.modelo_preco = ARIMA(self.df.close, order=(0, 1, 25)).fit()
+        self.modelo_preco = ARIMA(self.df.close, order=(1, 1, 25)).fit()
         self.y_pret_tot = self.modelo_preco.predict()
 
     def preve_valores(self, X):
