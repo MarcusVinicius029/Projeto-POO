@@ -50,13 +50,37 @@ class GraphPlotter:
         plt.show()
     
     def plot_volume_de_vendas(self):
+        """
+        Plota os dados coletados de volumes de vendas no gráfico.
+
+        O gráfico gerado mostra os volumes de vendas coletados ao longo do tempo.
+        """
         plt.figure(figsize=(10, 5))
         plt.plot(self.collected_data.vol, label='Dados Coletados', color='blue')
-        plt.plot(self.predicted_data, label='Dados Previstos', color='green')
-        plt.title('Dados Coletados e Previstos')
+        plt.title('Volume de Vendas')
         plt.xlabel('Tempo')
         plt.ylabel('Valor')
         plt.legend()
         plt.grid(True)
         plt.show()
-    
+
+    def plot_valor(self,n):
+        """
+        Plota os últimos n dias de valores coletados.
+
+        Parameters:
+        -----------
+        n : int
+            Número de dias a serem plotados.
+
+        O gráfico gerado mostra os valores coletados dos últimos n dias ao longo do tempo.
+        """
+        self.n_dias = self.collected_data.tail(n)
+        plt.figure(figsize=(10, 5))
+        plt.plot(self.n_dias, label='Dados Coletados', color='blue')
+        plt.title('Valor atual')
+        plt.xlabel('Tempo')
+        plt.ylabel('Valor')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
