@@ -45,14 +45,18 @@ class Bitcoin_model(Machine_Learning):
     y_pred (Series): Previsões futuras do modelo para o perído n.
     """
 
-    def __init__(self, dataFrame):
+    def __init__(self, dataFrame, tipo):
         """
         Inicializa a classe Bitcoin_model com um DataFrame e treina o modelo.
 
         Parameters:
-        dataFrame (DataFrame): DataFrame contendo os dados de preços do Bitcoin.
+        dataFrame (DataFrame): DataFrame contendo os dados de mercado do Bitcoin.
+        tipo (string): String contendo o nome da coluna alvo
+        df_alvo (DataFrame): DataFrame composto pela coluna alvo
         """
         self.df = dataFrame
+        self.tipo = tipo
+        self.df_alvo = self.df.loc[:, tipo]
         self.treina_modelo()
     
     def treina_modelo(self):
@@ -61,7 +65,7 @@ class Bitcoin_model(Machine_Learning):
 
         Define os atributos modelo_preco e y_pred_tot da classe.
         """
-        self.modelo_preco = ARIMA(self.df.Price, order=(2, 1, 2), freq="D").fit()
+        self.modelo_preco = ARIMA(self.df_alvo, order=(2, 1, 2), freq="D").fit()
         self.y_pred_tot = self.modelo_preco.predict()
     
     def preve_valores(self, X):
@@ -94,7 +98,7 @@ class Bitcoin_model(Machine_Learning):
         None: Se n não for 1 ou 2.
         """
         if n == 1:
-            mse = ((self.df.Price - self.y_pred_tot)**2).mean()
+            mse = ((self.df_alvo - self.y_pred_tot)**2).mean()
             return mse
         elif n == 2:
             return self.modelo_preco.params
@@ -112,14 +116,18 @@ class Ethereum_model(Machine_Learning):
     y_pred (Series): Previsões futuras do modelo para o perído n.
     """
 
-    def __init__(self, dataframe):
+    def __init__(self, dataframe, tipo):
         """
         Inicializa a classe Ethereum_model com um DataFrame e treina o modelo.
 
         Parameters:
-        dataframe (DataFrame): DataFrame contendo os dados de preços do Ethereum.
+        dataframe (DataFrame): DataFrame contendo dados de mercado do ethereum.
+        tipo (string): String contendo o nome da coluna alvo
+        df_alvo (DataFram): Dataframe contendo a coluna alvo
         """
         self.df = dataframe
+        self.tipo = tipo
+        self.df_alvo = self.df[self.tipo]
         self.treina_modelo()
 
     def treina_modelo(self):
@@ -128,7 +136,7 @@ class Ethereum_model(Machine_Learning):
 
         Define os atributos modelo_preco e y_pred_tot da classe.
         """
-        self.modelo_preco = ARIMA(self.df.close, freq="D", order=(1, 1, 3)).fit()
+        self.modelo_preco = ARIMA(self.df_alvo, freq="D", order=(1, 1, 3)).fit()
         self.y_pred_tot = self.modelo_preco.predict()
 
     def preve_valores(self, X):
@@ -161,7 +169,7 @@ class Ethereum_model(Machine_Learning):
         None: Se n não for 1 ou 2.
         """
         if n == 1:
-            sme = ((self.df.close - self.y_pred_tot)**2).mean()
+            sme = ((self.df_alvo - self.y_pred_tot)**2).mean()
             return sme
         elif n == 2:
             return self.modelo_preco.params
@@ -176,7 +184,7 @@ class Solana_model(Machine_Learning):
     para treinar o modelo ARIMA, prever valores futuros e calcular atributos do modelo.
     """
 
-    def __init__(self, dataframe):
+    def __init__(self, dataframe, tipo):
         """
         Inicializa a classe Solana_model com um DataFrame e treina o modelo ARIMA.
 
@@ -184,6 +192,9 @@ class Solana_model(Machine_Learning):
         dataframe (pd.DataFrame): DataFrame contendo os dados históricos de preços da Solana.
         """
         self.df = dataframe
+        self.tipo = tipo
+        self.df_alvo = self.df[self.tipo]
+
         self.treina_modelo()
     
     def treina_modelo(self):
@@ -194,7 +205,7 @@ class Solana_model(Machine_Learning):
         - modelo_preco: O modelo ARIMA treinado.
         - y_pret_tot: Previsões do modelo para os dados de treino.
         """
-        self.modelo_preco = ARIMA(self.df.close, order=(1, 1, 25)).fit()
+        self.modelo_preco = ARIMA(self.df_alvo, order=(1, 1, 25)).fit()
         self.y_pret_tot = self.modelo_preco.predict()
 
     def preve_valores(self, X):
@@ -227,7 +238,7 @@ class Solana_model(Machine_Learning):
         None: Se n não for 1 ou 2.
         """
         if n == 1:
-            mse = ((self.df.close - self.y_pret_tot)**2).mean()
+            mse = ((self.df_alvo - self.y_pret_tot)**2).mean()
             return mse
         elif n == 2:
             return self.modelo_preco.params

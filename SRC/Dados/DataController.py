@@ -1,5 +1,6 @@
 from .MachineLearning.machineLearning import Bitcoin_model, Ethereum_model, Solana_model
 from .Data.data import Bitcoin_data, Ethereum_data, Solana_data, Dolar_data
+import pandas as pd
 
 class DataControler:
     """
@@ -7,141 +8,72 @@ class DataControler:
 
     Esta classe gerencia a inicialização de dados, criação de modelos e previsão de valores 
     para Bitcoin, Ethereum e Solana, além de obter a cotação do dólar.
+
+    Attributes:
+        bitcoin_data (Bitcoin_data): Objeto para manipulação de dados da Bitcoin.
+        ethereum_data (Ethereum_data): Objeto para manipulação de dados da Ethereum.
+        solana_data (Solana_data): Objeto para manipulação de dados da Solana.
+        dolar_data (Dolar_data): Objeto para manipulação de dados do dólar.
+        b_model (Bitcoin_model): Objeto para previsão de valores da Bitcoin.
+        e_model (Ethereum_model): Objeto para previsão de valores da Ethereum.
+        s_model (Solana_model): Objeto para previsão de valores da Solana.
     """
 
     @classmethod
-    def start(cls, endereco_datasets):
+    def get_moeda_df(cls, moeda, model=False, n=10):
         """
-        Inicializa os dados e modelos para Bitcoin, Ethereum e Solana.
+        Retorna um DataFrame contendo os dados da moeda especificada.
 
-        Parâmetros:
-        endereco_datasets (list): Lista de strings com os endereços dos datasets para 
-                                  Bitcoin, Ethereum e Solana, respectivamente.
+        Args:
+            moeda (str): Nome da moeda ("bitcoin", "ethereum", "solana" ou "dolar").
+            model (bool, optional): Indica se o dataFrame será usado em algum modelo. 
+                                    Defaut: False.
+            n (int, optional): Número de dias passados para o qual se quer obter os dados de mercado.
+
+        Returns:
+            pd.DataFrame: DataFrame contendo os dados da moeda especificada.
+
+        """
+        if moeda == "bitcoin":    
+            cls.bitcoin_data = Bitcoin_data(n, model)
+            return cls.bitcoin_data.df
+        elif moeda == "ethereum":
+            cls.ethereum_data = Ethereum_data(n, model)
+            return cls.ethereum_data.df
+        elif moeda == "solana":
+            cls.solana_data = Solana_data(n, model)
+            return cls.solana_data.df
+        elif moeda == "dolar":
+            cls.dolar_data = Dolar_data(n)
+            return cls.dolar_data.df
+        else:
+            return pd.DataFrame()
         
-        Atributos de Classe:
-        bitcoin_data: Instância de Bitcoin_data.
-        ethereum_data: Instância de Ethereum_data.
-        solana_data: Instância de Solana_data.
-        dolar_data: Instância de Dolar_data.
-        bitcoin_df: DataFrame contendo os dados do Bitcoin.
-        ethereum_df: DataFrame contendo os dados do Ethereum.
-        solana_df: DataFrame contendo os dados do Solana.
-        b_model: Instância de Bitcoin_model.
-        e_model: Instância de Ethereum_model.
-        s_model: Instância de Solana_model.
-        """
-        cls.bitcoin_data = Bitcoin_data(endereco_datasets[0])
-        cls.ethereum_data = Ethereum_data(endereco_datasets[1])
-        cls.solana_data = Solana_data(endereco_datasets[2])
-        cls.dolar_data = Dolar_data()
-
-        cls.bitcoin_df = cls.bitcoin_data.df
-        cls.ethereum_df = cls.ethereum_data.df
-        cls.solana_df = cls.solana_data.df
-
-        cls.b_model = Bitcoin_model(cls.bitcoin_df)
-        cls.e_model = Ethereum_model(cls.ethereum_df)
-        cls.s_model = Solana_model(cls.solana_df)
-
     @classmethod
-    def previsao_bitcoin(cls, X):
+    def get_previsao(cls, df, X, moeda, tipo="Price"):
         """
-        Faz a previsão de valores futuros do Bitcoin.
+        Retorna a previsão de valores para uma moeda específica.
 
-        Parâmetros:
-        X (int, str, dateTime): O número de dias a partir da data atual, ou uma data específica 
-                                (no formato "Ano-Mês-Dia"), para a qual se deseja fazer a previsão.
+        Args:
+            df (pd.DataFrame): DataFrame contendo os dados históricos da moeda.
+            X (array-like): Dados de entrada para a previsão.
+            moeda (str): Nome da moeda ("bitcoin", "ethereum" ou "solana").
+            tipo (str, optional): Tipo de valor a ser previsto. O padrão é "Price".
 
-        Retorna:
-        pd.Series: Previsões de valores futuros do Bitcoin.
+        Returns:
+            DataFrame: Valores previstos pelo modelo de acordo com o tipo passado.
+            -1 (int): Código de erro, indica que o dataFrame passado para a função está vazio
         """
-        return cls.b_model.preve_valores(X)
-    
-    @classmethod
-    def obtem_prm_b_model(cls, n):
-        """
-        Obtém parâmetros ou métricas do modelo de Bitcoin.
-
-        Parâmetros:
-        n (int): Tipo de parâmetro ou métrica a ser retornada:
-                 - n = 1: Retorna o erro quadrático médio (MSE) das previsões.
-                 - n = 2: Retorna os parâmetros do modelo ARIMA.
-
-        Retorna:
-        float ou pd.Series: O erro quadrático médio (MSE) se n = 1, ou os parâmetros do modelo 
-                            ARIMA se n = 2.
-        """
-        return cls.b_model.calcula_atributos_do_modelo(n)
-
-    @classmethod
-    def previsao_ethereum(cls, X):
-        """
-        Faz a previsão de valores futuros do Ethereum.
-
-        Parâmetros:
-        X (int, str, dateTime): O número de dias a partir da data atual, ou uma data específica 
-                                (no formato "Ano-Mês-Dia"), para a qual se deseja fazer a previsão.
-
-        Retorna:
-        pd.Series: Previsões de valores futuros do Ethereum.
-        """
-        return cls.e_model.preve_valores(X)
-    
-    @classmethod
-    def obtem_prm_e_model(cls, n):
-        """
-        Obtém parâmetros ou métricas do modelo de Ethereum.
-
-        Parâmetros:
-        n (int): Tipo de parâmetro ou métrica a ser retornada:
-                 - n = 1: Retorna o erro quadrático médio (MSE) das previsões.
-                 - n = 2: Retorna os parâmetros do modelo ARIMA.
-
-        Retorna:
-        float ou pd.Series: O erro quadrático médio (MSE) se n = 1, ou os parâmetros do modelo 
-                            ARIMA se n = 2.
-        """
-        return cls.e_model.calcula_atributos_do_modelo(n)
-    
-    @classmethod
-    def previsao_solana(cls, X):
-        """
-        Faz a previsão de valores futuros da Solana.
-
-        Parâmetros:
-        X (int, str, dateTime): O número de dias a partir da data atual, ou uma data específica 
-                                (no formato "Ano-Mês-Dia"), para a qual se deseja fazer a previsão.
-
-        Retorna:
-        pd.Series: Previsões de valores futuros da Solana.
-        """
-        return cls.s_model.preve_valores(X)
-    
-    @classmethod
-    def obtem_prm_s_model(cls, n):
-        """
-        Obtém parâmetros ou métricas do modelo de Solana.
-
-        Parâmetros:
-        n (int): Tipo de parâmetro ou métrica a ser retornada:
-                 - n = 1: Retorna o erro quadrático médio (MSE) das previsões.
-                 - n = 2: Retorna os parâmetros do modelo ARIMA.
-
-        Retorna:
-        float ou pd.Series: O erro quadrático médio (MSE) se n = 1, ou os parâmetros do modelo 
-                            ARIMA se n = 2.
-        """
-        return cls.s_model.calcula_atributos_do_modelo(n)
-    
-    @classmethod
-    def get_cotacao_dolar(cls, n):
-        """
-        Obtém a cotação do dólar.
-
-        Parâmetros:
-        n (int): O número de cotações a serem obtidas.
-
-        Retorna:
-        DataFrame: DataFrame com as cotações dos n dias anteriores.
-        """
-        return cls.dolar_data.get_cotacao(n)
+        if df.empty:
+            return -1
+        elif moeda == "bitcoin":
+            cls.b_model = Bitcoin_model(df, tipo)
+            return cls.b_model.preve_valores(X)
+        elif moeda == "ethereum":
+            cls.e_model = Ethereum_model(df, tipo)
+            return cls.e_model.preve_valores(X)
+        elif moeda == "solana":
+            cls.s_model = Solana_model(df, tipo)
+            return cls.s_model.preve_valores(X)
+        else:
+            return -1

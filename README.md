@@ -1,6 +1,8 @@
-pip3 intall pandas
-pip3 install matplotlib
-pip3 intall statsmodel
-pip3 instal requests
+Execute os seguintes comandos em seu terminal antes de rodar o programa
 
-python main.py
+    pip3 intall pandas
+    pip3 install matplotlib
+    pip3 intall statsmodel
+    pip3 instal requests
+
+    python main.py
