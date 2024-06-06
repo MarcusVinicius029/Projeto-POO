@@ -32,8 +32,7 @@ class Machine_Learning(abc.ABC):
 
         """
         pass
-
-    
+   
 class Bitcoin_model(Machine_Learning):
     """
     Classe para modelar o preço do Bitcoin utilizando ARIMA.
@@ -136,7 +135,7 @@ class Ethereum_model(Machine_Learning):
 
         Define os atributos modelo_preco e y_pred_tot da classe.
         """
-        self.modelo_preco = ARIMA(self.df_alvo, freq="D", order=(1, 1, 3)).fit()
+        self.modelo_preco = ARIMA(self.df_alvo, freq="D", order=(3, 1, 5)).fit()
         self.y_pred_tot = self.modelo_preco.predict()
 
     def preve_valores(self, X):
