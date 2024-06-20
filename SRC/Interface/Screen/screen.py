@@ -9,7 +9,7 @@ def coletar_dados():
         semanas = entry_semanas.get()
         previsao = var_previsao.get()
 
-        # Validação dos campos de entrada
+        # Tratando erros
         if not criptomoeda:
             messagebox.showwarning("Aviso", "Por favor, insira o nome da criptomoeda.")
             return
@@ -61,6 +61,6 @@ def coletar_dados():
     return criptomoeda, semanas, previsao
 
 
-# Testando a função
+
 print(coletar_dados())
 print(criptomoeda, semanas, previsao)
