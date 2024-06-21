@@ -8,376 +8,395 @@ import os
 
 class Dados(abc.ABC):
     """
-    Classe abstrata para manipulação de dados externos.
+    Classe abstrata para manipulação de dados.
+
+    Define métodos abstratos que devem ser implementados por subclasses concretas para correção,
+    salvamento e obtenção de dados externos e internos.
+
+    Attributes:
+        Não possui atributos definidos na classe base.
     """
 
-    def __inti__(self, n, model = False):
+    def __inti__(self):
+        """
+        Construtor da classe Dados.
+
+        Este construtor está vazio, pois não é necessário inicializar atributos específicos na classe base.
+        """
         pass
 
     @abc.abstractmethod
     def corrige_os_dados_externos(self):
         """
-        Método abstrato para corrigir os dados externos.
+        Método abstrato para correção dos dados externos.
 
-        Este método deve ser implementado pelas subclasses para realizar qualquer correção necessária nos dados externos.
+        Cada implementação concreta deve definir como corrigir os dados obtidos externamente.
         """
         pass
 
     @abc.abstractmethod
     def corrige_os_dados_internos(self):
         """
-        Método abstrato para corrigir os dados internos.
+        Método abstrato para correção dos dados internos.
 
-        Este método deve ser implementado pelas subclasses para carregar os dados internos salvos em disco.
+        Cada implementação concreta deve definir como corrigir os dados carregados de um arquivo interno.
         """
         pass
 
-class Bitcoin_data(Dados):
-    def __init__(self, n, time, model):
+    @abc.abstractmethod
+    def salva_os_dados_externos(self):
+        """
+        Método abstrato para salvar os dados corrigidos externos.
 
-        self.model = model
+        Cada implementação concreta deve definir como salvar os dados corrigidos externos em um arquivo.
+        """
+        pass
+
+    @abc.abstractmethod
+    def get_dados_internos(self):
+        """
+        Método abstrato para obter os dados internos.
+
+        Cada implementação concreta deve definir como carregar os dados de um arquivo interno.
+        """
+        pass
+
+    @abc.abstractmethod
+    def corrige_os_dados_internos(self):
+        """
+        Método abstrato para correção dos dados internos.
+
+        Cada implementação concreta deve definir como corrigir os dados carregados de um arquivo interno.
+        """
+        pass
+
+class Criptomoedas_data(Dados):
+    """
+    Classe para obtenção, correção e salvamento de dados de criptomoedas.
+
+    Esta classe herda da classe Dados.
+
+    Args:
+        n (int): Número de (minutos, horas ou dias) anteriores ao período atual.
+        criptomoeda (str): Nome da criptomoeda (por exemplo, "BTC", "ETH", "SOL"), as criptomedas devem ser passadas pela sua sigla.
+        time (str): Unidade de tempo dos dados ("day", "hour" ou "minute").
+
+    Attributes:
+        time (str): Unidade de tempo dos dados.
+        criptomoeda (str): Nome da criptomoeda.
+        n (int): Número de registros a serem obtidos.
+        requisicao (requests.Response): Resposta da requisição HTTP.
+        dados (dict): Dados obtidos da API.
+        df (pandas.DataFrame): DataFrame para armazenamento e manipulação dos dados.
+    """
+
+    def __init__(self, n: int, criptomoeda: str, time: str):
+        """
+        Inicializa a classe Criptomoedas_data.
+
+        Faz uma requisição à API para obter os dados da criptomoeda especificada.
+        Se a requisição for bem-sucedida, corrige os dados, salva-os externamente se for o caso,
+        ou recupera dados internos se houver falha na conexão.
+        Lança exceções se houver problemas na conexão ou se os dados estiverem incorretos.
+
+        Args:
+            n (int): Número de registros a serem obtidos.
+            criptomoeda (str): Nome da criptomoeda (por exemplo, "BTC", "ETH", "SOL").
+            time (str): Unidade de tempo dos dados ("day", "hour" ou "minute").
+
+        Raises:
+            ValueError: Se houver problemas na conexão ou se os dados estiverem incorretos.
+        """
         self.time = time
+        self.criptomoeda = criptomoeda
+        self.n = n
         try:
-            if model:
-                self.requisicao = req.get(f"https://min-api.cryptocompare.com/data/v2/histoday?fsym=BTC&tsym=BRL&allData=true&api_key=53d41b3b5d49f3b5dba9daa9cb4f60848f537f53de8284c2e169324dca23bc9c")
-            else:
-                self.requisicao = req.get(f"https://min-api.cryptocompare.com/data/v2/histo{self.time}?fsym=BTC&tsym=BRL&limit={n}&api_key=53d41b3b5d49f3b5dba9daa9cb4f60848f537f53de8284c2e169324dca23bc9c")
-
+            self.requisicao = req.get(f"https://min-api.cryptocompare.com/data/v2/histo{self.time}?fsym={self.criptomoeda}&tsym=BRL&limit={self.n}&api_key=53d41b3b5d49f3b5dba9daa9cb4f60848f537f53de8284c2e169324dca23bc9c")
             if self.requisicao.status_code == 200:
                 self.dados = self.requisicao.json()
-                self.corrige_os_dados_externos()
-            else:
-                if self.time == "day":    
-                    if model:
-                        relative_path = "modelDataSets/bitcoin.csv"
-                    else:
-                        relative_path = "DataSets/bitcoin_data.csv"
-                    script_dir = os.path.dirname(os.path.abspath(__file__))
-                    csv_path = os.path.join(script_dir, relative_path)
-                    if os.path.exists(csv_path):
-                        self.df = pd.read_csv(csv_path)
-                        self.corrige_os_dados_internos()
-                elif self.time == "hour" and self.model == False:
-                    relative_path = "DataSets_hour/bitcoin_hour.csv"
-                    script_dir = os.path.dirname(os.path.abspath(__file__))
-                    csv_path = os.path.join(script_dir, relative_path)
-                    if os.path.exists(csv_path):
-                        self.df = pd.read_csv(csv_path)
-                        self.corrige_os_dados_internos()
-
-        except req.exceptions.RequestException:
-            if self.time == "day":    
-                if model:
-                    relative_path = "modelDataSets/bitcoin.csv"
+                if self.dados["Response"] == "Success":
+                    self.corrige_os_dados_externos()
+                    if self.criptomoeda == "BTC" and self.time == "day" and self.n >= 10:
+                        self.salva_os_dados_externos("DataSets/bitcoin_data.csv")
+                    elif self.criptomoeda == "ETH" and self.time == "day" and self.n >= 10:
+                        self.salva_os_dados_externos("DataSets/ethereum_data.csv")
+                    elif self.criptomoeda == "SOL" and self.time == "day" and self.n >= 10:
+                        self.salva_os_dados_externos("DataSets/solana_data.csv")
                 else:
-                    relative_path = "DataSets/bitcoin_data.csv"
-                script_dir = os.path.dirname(os.path.abspath(__file__))
-                csv_path = os.path.join(script_dir, relative_path)
-                if os.path.exists(csv_path):
-                    self.df = pd.read_csv(csv_path)
-                    self.corrige_os_dados_internos()
-            elif self.time == "hour" and self.model == False:
-                relative_path = "DataSets_hour/bitcoin_hour.csv"
-                script_dir = os.path.dirname(os.path.abspath(__file__))
-                csv_path = os.path.join(script_dir, relative_path)
-                if os.path.exists(csv_path):
-                    self.df = pd.read_csv(csv_path)
-                    self.corrige_os_dados_internos()
-
-    def corrige_os_dados_externos(self):
-        self.df = pd.DataFrame([self.dados["Data"]["Data"][n]["time"] for n in range(len(self.dados["Data"]["Data"]))], columns=["time"])
-        self.df["Open"] = [self.dados["Data"]["Data"][n]["open"] for n in range(len(self.dados["Data"]["Data"]))]
-        self.df["High"] = [self.dados["Data"]["Data"][n]["high"] for n in range(len(self.dados["Data"]["Data"]))]
-        self.df["Low"] = [self.dados["Data"]["Data"][n]["low"] for n in range(len(self.dados["Data"]["Data"]))]
-        self.df["Price"] = [self.dados["Data"]["Data"][n]["close"] for n in range(len(self.dados["Data"]["Data"]))]
-        self.df["Volume"] = [self.dados["Data"]["Data"][n]["volumeto"] for n in range(len(self.dados["Data"]["Data"]))]  
-        if self.time == "day":
-            self.df.time = self.df.time.astype(int)
-            self.df["Data"] = pd.to_datetime(self.df.time)
-            for n in range(len(self.df)):
-                self.df.loc[n, "Data"] = datetime.fromtimestamp(self.df.loc[n, "time"]).date()
-
-            self.df = self.df.drop(columns=["time"])
-            self.df.set_index('Data', inplace=True)
-            self.df = self.df.iloc[::-1]
-            self.df = self.df.asfreq("D")
-            if self.model == False:
-                relative_path = "DataSets/bitcoin_data.csv"
-                script_dir = os.path.dirname(os.path.abspath(__file__))
-                csv_path = os.path.join(script_dir, relative_path)
-                if os.path.exists(csv_path):
-                    self.df.to_csv(csv_path)
-            elif self.model:
-                relative_path = "modelDataSets/bitcoin.csv"
-                script_dir = os.path.dirname(os.path.abspath(__file__))
-                csv_path = os.path.join(script_dir, relative_path)
-                if os.path.exists(csv_path):
-                    self.df.to_csv(csv_path)            
-        elif self.time == "hour" and self.model == False:
-            self.df.time = self.df.time.astype(int)
-            self.df["Data"] = pd.to_datetime(self.df.time)
-            for n in range(len(self.df)):
-                self.df.loc[n, "Data"] = datetime.fromtimestamp(self.df.loc[n, "time"])
-
-            self.df = self.df.drop(columns=["time"])
-            self.df.set_index('Data', inplace=True)
-            relative_path = "DataSets_hour/bitcoin_hour.csv"
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            csv_path = os.path.join(script_dir, relative_path)
-            if os.path.exists(csv_path):
-                    self.df.to_csv(csv_path)
-
-    def corrige_os_dados_internos(self):
-        if self.time == "day":
-            self.df.Data = pd.to_datetime(self.df.Data)
-            self.df.set_index("Data", inplace= True)
-            self.df = self.df.asfreq("D")
-        else:
-            self.df.Data = pd.to_datetime(self.df.Data)
-            self.df.set_index("Data", inplace= True)   
-
-class Ethereum_data(Dados):
-
-    def __init__(self, n, time, model):
-
-        self.model = model
-        self.time = time
-        try:
-            if model:
-                self.requisicao = req.get(f"https://min-api.cryptocompare.com/data/v2/histoday?fsym=ETH&tsym=BRL&allData=true&api_key=53d41b3b5d49f3b5dba9daa9cb4f60848f537f53de8284c2e169324dca23bc9c")
+                    raise ValueError("Dados incorretos!")
             else:
-                self.requisicao = req.get(f"https://min-api.cryptocompare.com/data/v2/histo{self.time}?fsym=ETH&tsym=BRL&limit={n}&api_key=53d41b3b5d49f3b5dba9daa9cb4f60848f537f53de8284c2e169324dca23bc9c")
-
-            if self.requisicao.status_code == 200:
-                self.dados = self.requisicao.json()
-                self.corrige_os_dados_externos()
-            else:
-                if self.time == "day":    
-                    if model:
-                        relative_path = "modelDataSets\ethereum.csv"
-                    else:
-                        relative_path = "DataSets\ethereum_data.csv"
-                    script_dir = os.path.dirname(os.path.abspath(__file__))
-                    csv_path = os.path.join(script_dir, relative_path)
-                    if os.path.exists(csv_path):
-                        self.df = pd.read_csv(csv_path)
-                        self.corrige_os_dados_internos()
-                elif self.time == "hour" and self.model == False:
-                    relative_path = "DataSets_hour\ethereum_hour.csv"
-                    script_dir = os.path.dirname(os.path.abspath(__file__))
-                    csv_path = os.path.join(script_dir, relative_path)
-                    if os.path.exists(csv_path):
-                        self.df = pd.read_csv(csv_path)
-                        self.corrige_os_dados_internos()
-
-        except req.exceptions.RequestException:
-            if self.time == "day":    
-                if model == False:
-                    relative_path = "DataSets/ethereum_data.csv"
-                elif model:
-                    relative_path = "modelDataSets/ethereum.csv"
-                script_dir = os.path.dirname(os.path.abspath(__file__))
-                csv_path = os.path.join(script_dir, relative_path)
-                if os.path.exists(csv_path):
-                    self.df = pd.read_csv(csv_path)
-                    self.corrige_os_dados_internos()
-            elif self.time == "hour" and self.model == False:
-                relative_path = "DataSets_hour\ethereum_hour.csv"
-                script_dir = os.path.dirname(os.path.abspath(__file__))
-                csv_path = os.path.join(script_dir, relative_path)
-                if os.path.exists(csv_path):
-                    self.df = pd.read_csv(csv_path)
-                    self.corrige_os_dados_internos()
-
-    def corrige_os_dados_externos(self):
-        """
-        Corrige os dados externos do Ethereum.
-
-        Esta função é responsável por corrigir os dados externos obtidos da API, formatando-os em um DataFrame do Pandas.
-        """
-        self.df = pd.DataFrame([self.dados["Data"]["Data"][n]["time"] for n in range(len(self.dados["Data"]["Data"]))], columns=["time"])
-        self.df["Open"] = [self.dados["Data"]["Data"][n]["open"] for n in range(len(self.dados["Data"]["Data"]))]
-        self.df["High"] = [self.dados["Data"]["Data"][n]["high"] for n in range(len(self.dados["Data"]["Data"]))]
-        self.df["Low"] = [self.dados["Data"]["Data"][n]["low"] for n in range(len(self.dados["Data"]["Data"]))]
-        self.df["Price"] = [self.dados["Data"]["Data"][n]["close"] for n in range(len(self.dados["Data"]["Data"]))]
-        self.df["Volume"] = [self.dados["Data"]["Data"][n]["volumeto"] for n in range(len(self.dados["Data"]["Data"]))]  
-        if self.time == "day":
-            self.df.time = self.df.time.astype(int)
-            self.df["Data"] = pd.to_datetime(self.df.time)
-            for n in range(len(self.df)):
-                self.df.loc[n, "Data"] = datetime.fromtimestamp(self.df.loc[n, "time"]).date()
-
-            self.df = self.df.drop(columns=["time"])
-            self.df.set_index('Data', inplace=True)
-            self.df = self.df.iloc[::-1]
-            self.df = self.df.asfreq("D")
-            if self.model == False:
-                relative_path = "DataSets/ethereum_data.csv"
-                script_dir = os.path.dirname(os.path.abspath(__file__))
-                csv_path = os.path.join(script_dir, relative_path)
-                if os.path.exists(csv_path):
-                    self.df.to_csv(csv_path)
-            elif self.model:
-                relative_path = "modelDataSets/ethereum.csv"
-                script_dir = os.path.dirname(os.path.abspath(__file__))
-                csv_path = os.path.join(script_dir, relative_path)
-                if os.path.exists(csv_path):
-                    self.df.to_csv(csv_path)            
-        elif self.time == "hour" and self.model == False:
-            self.df.time = self.df.time.astype(int)
-            self.df["Data"] = pd.to_datetime(self.df.time)
-            for n in range(len(self.df)):
-                self.df.loc[n, "Data"] = datetime.fromtimestamp(self.df.loc[n, "time"])
-
-            self.df = self.df.drop(columns=["time"])
-            self.df.set_index('Data', inplace=True)
-            relative_path = "DataSets_hour\ethereum_hour.csv"
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            csv_path = os.path.join(script_dir, relative_path)
-            if os.path.exists(csv_path):
-                    self.df.to_csv(csv_path)
-
-    def corrige_os_dados_internos(self):
-        """
-        Corrige os dados internos do Ethereum.
-
-        Esta função é responsável por corrigir os dados internos do Ethereum, se necessário.
-        """
-        if self.time == "day":
-            self.df.Data = pd.to_datetime(self.df.Data)
-            self.df.set_index("Data", inplace= True)
-            self.df = self.df.asfreq("D")
-        else:
-            self.df.Data = pd.to_datetime(self.df.Data)
-            self.df.set_index("Data", inplace= True)         
-
-class Solana_data(Dados):
-    
-    def __init__(self, n, time, model):
-
-        self.model = model
-        self.time = time
-        try:
-            if model:
-                self.requisicao = req.get(f"https://min-api.cryptocompare.com/data/v2/histoday?fsym=SOL&tsym=BRL&allData=true&api_key=53d41b3b5d49f3b5dba9daa9cb4f60848f537f53de8284c2e169324dca23bc9c")
-            else:
-                self.requisicao = req.get(f"https://min-api.cryptocompare.com/data/v2/histo{self.time}?fsym=SOL&tsym=BRL&limit={n}&api_key=53d41b3b5d49f3b5dba9daa9cb4f60848f537f53de8284c2e169324dca23bc9c")
-
-            if self.requisicao.status_code == 200:
-                self.dados = self.requisicao.json()
-                self.corrige_os_dados_externos()
-            else:
-                if self.time == "day":        
-                    if model:
-                        relative_path = "modelDataSets\ethereum.csv"
-                    else:
-                        relative_path = "DataSets\ethereum_data.csv"
-                    script_dir = os.path.dirname(os.path.abspath(__file__))
-                    csv_path = os.path.join(script_dir, relative_path)
-                    if os.path.exists(csv_path):
-                        self.df = pd.read_csv(csv_path)
-                        self.corrige_os_dados_internos()
-
-                elif self.time == "hour" and self.model == False:
-                    relative_path = "DataSets_hour\solana_hour.csv"
-                    script_dir = os.path.dirname(os.path.abspath(__file__))
-                    csv_path = os.path.join(script_dir, relative_path)
-                    if os.path.exists(csv_path):
-                        self.df = pd.read_csv(csv_path)
-                        self.corrige_os_dados_internos()
-
+                raise ValueError("Problemas na conexão!")
         except req.exceptions.RequestException:
             if self.time == "day":
-                if self.model == False:
-                    relative_path = "DataSets\solana_data.csv"
-                elif self.model:
-                    relative_path = "modelDataSets/solana.csv"
-                script_dir = os.path.dirname(os.path.abspath(__file__))
-                csv_path = os.path.join(script_dir, relative_path)
-                if os.path.exists(csv_path):
-                    self.df = pd.read_csv(csv_path)
-                    self.corrige_os_dados_internos()
-            elif self.time == "hour" and self.model == False:
-                relative_path = "DataSets_hour\solana_hour.csv"
-                script_dir = os.path.dirname(os.path.abspath(__file__))
-                csv_path = os.path.join(script_dir, relative_path)
-                if os.path.exists(csv_path):
-                    self.df = pd.read_csv(csv_path)
-                    self.corrige_os_dados_internos()
-
+                if self.criptomoeda == "BTC":
+                    self.get_dados_internos("DataSets/bitcoin_data.csv")
+                elif self.criptomoeda == "ETH":
+                    self.get_dados_internos("DataSets/ethereum_data.csv")
+                elif self.criptomoeda == "SOL":
+                    self.get_dados_internos("DataSets/solana_data.csv")
+                else:
+                    raise ValueError("Problemas na conexão!")
+            else: 
+                raise ValueError("Problemas na conexão!")
+    
     def corrige_os_dados_externos(self):
+        """
+        Corrige os dados externos obtidos da API.
 
+        Converte os dados em um DataFrame Pandas, ajusta os tipos de dados e define a coluna 'Data' como índice.
+        """
         self.df = pd.DataFrame([self.dados["Data"]["Data"][n]["time"] for n in range(len(self.dados["Data"]["Data"]))], columns=["time"])
         self.df["Open"] = [self.dados["Data"]["Data"][n]["open"] for n in range(len(self.dados["Data"]["Data"]))]
         self.df["High"] = [self.dados["Data"]["Data"][n]["high"] for n in range(len(self.dados["Data"]["Data"]))]
         self.df["Low"] = [self.dados["Data"]["Data"][n]["low"] for n in range(len(self.dados["Data"]["Data"]))]
         self.df["Price"] = [self.dados["Data"]["Data"][n]["close"] for n in range(len(self.dados["Data"]["Data"]))]
-        self.df["Volume"] = [self.dados["Data"]["Data"][n]["volumeto"] for n in range(len(self.dados["Data"]["Data"]))]  
+        self.df["Volume"] = [self.dados["Data"]["Data"][n]["volumeto"] for n in range(len(self.dados["Data"]["Data"]))]       
         self.df.time = self.df.time.astype(int)
-        self.df["Data"] = pd.to_datetime(self.df.time)
-        print(self.df)
 
         if self.time == "day":
-            for n in range(len(self.df)):
-                self.df.loc[n, "Data"] = datetime.fromtimestamp(self.df.loc[n, "time"]).date()
-            self.df = self.df.drop(columns=["time"])
-            self.df.set_index('Data', inplace=True)
-            self.df = self.df.iloc[::-1]
-            self.df = self.df.asfreq("D")
-            if self.model == False:
-                relative_path = "DataSets/solana_data.csv"
-                script_dir = os.path.dirname(os.path.abspath(__file__))
-                csv_path = os.path.join(script_dir, relative_path)
-                if os.path.exists(csv_path):
-                    self.df.to_csv(csv_path)
-            elif self.model:
-                relative_path = "modelDataSets/solana.csv"
-                script_dir = os.path.dirname(os.path.abspath(__file__))
-                csv_path = os.path.join(script_dir, relative_path)
-                if os.path.exists(csv_path):
-                    self.df.to_csv(csv_path)
+            for i in range(len(self.df)):
+                    self.df.loc[i, "Data"] = datetime.fromtimestamp(self.df.loc[i, "time"]).date()
+            self.df.Data = pd.to_datetime(self.df.Data)
+        elif self.time == "hour":
+            for i in range(len(self.df)):
+                    self.df.loc[i, "Data"] = datetime.fromtimestamp(self.df.loc[i, "time"]).time()
+        elif self.time == "minute":
+            for i in range(len(self.df)):
+                self.df.loc[i, "Data"] = datetime.fromtimestamp(self.df.loc[i, "time"]).time()
+        
+        if self.n == 1:
+            last_index = self.df.index[-1]
+            self.df = pd.DataFrame(self.df.loc[last_index]).T
+        self.df.set_index('Data', inplace=True)
+        self.df = self.df.drop(columns=["time"])
 
+    def salva_os_dados_externos(self, caminho: str):
+        """
+        Salva os dados corrigidos externos em um arquivo CSV.
+
+        Args:
+            caminho (str): Caminho relativo do arquivo CSV onde os dados serão salvos.
+
+        Raises:
+            ValueError: Se o caminho passado estiver incorreto.
+        """
+        relative_path = caminho
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        csv_path = os.path.join(script_dir, relative_path)
+        if os.path.exists(csv_path):
+            self.df.to_csv(csv_path)
         else:
-            for n in range(len(self.df)):
-                self.df.loc[n, "Data"] = datetime.fromtimestamp(self.df.loc[n, "time"])
+            raise ValueError("O caminho passado está errado!")
 
-            self.df = self.df.drop(columns=["time"])
-            self.df.set_index('Data', inplace=True)
+    def get_dados_internos(self, caminho: str):
+        """
+        Obtém dados internos de um arquivo CSV.
 
-            relative_path = "DataSets_hour\solana_hour.csv"
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            csv_path = os.path.join(script_dir, relative_path)
-            if os.path.exists(csv_path):
-                self.df.to_csv(csv_path)        
+        Args:
+            caminho (str): Caminho relativo do arquivo CSV de onde os dados serão obtidos.
+
+        Raises:
+            ValueError: Se o arquivo especificado não for encontrado.
+        """
+        relative_path = caminho
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        csv_path = os.path.join(script_dir, relative_path)
+        if os.path.exists(csv_path):
+            self.df = pd.read_csv(csv_path, delimiter=",")
+            self.corrige_os_dados_internos()
+        else:
+            raise ValueError("Arquivo não encontrado!")
 
     def corrige_os_dados_internos(self):
-        if self.time == "day":    
-            self.df.Data = pd.to_datetime(self.df.Data)
-            self.df.set_index("Data", inplace= True)
-            self.df = self.df.asfreq("D")
+        """
+        Corrige os dados internos obtidos de um arquivo CSV.
+
+        Converte a coluna 'Data' para o tipo datetime e define-a como índice do DataFrame.
+        """
+        self.df.Data = pd.to_datetime(self.df.Data)
+        self.df.set_index("Data", inplace=True)
+
+class Previsao_data(Dados):
+    """
+    Classe para obtenção, correção e salvamento de dados históricos para previsão de criptomoedas.
+
+    Esta classe herda da classe Dados.
+
+    Args:
+        criptomoeda (str): Nome da criptomoeda ("BTC", "ETH" ou "SOL").
+
+    Attributes:
+        criptomoeda (str): Nome da criptomoeda.
+        requisicao (requests.Response): Resposta da requisição HTTP.
+        dados (dict): Dados obtidos da API ou internamente.
+        df (pandas.DataFrame): DataFrame para armazenamento e manipulação dos dados.
+    """
+
+    def __init__(self, criptomoeda: str):
+        """
+        Inicializa a classe Previsao_data.
+
+        Faz uma requisição à API para obter os dados históricos da criptomoeda especificada.
+        Se a requisição for bem-sucedida, corrige os dados, salva-os externamente se for o caso,
+        ou recupera dados internos se houver falha na conexão.
+        Lança exceções se houver problemas na conexão, se a criptomoeda não for suportada
+        ou se os dados estiverem incorretos.
+
+        Args:
+            criptomoeda (str): Nome da criptomoeda ("BTC", "ETH" ou "SOL").
+
+        Raises:
+            ValueError: Se houver problemas na conexão, se a criptomoeda não for suportada
+                        ou se os dados estiverem incorretos.
+        """
+        self.criptomoeda = criptomoeda
+        if self.criptomoeda in ["BTC", "ETH", "SOL"]:
+            try:
+                self.requisicao = req.get(f"https://min-api.cryptocompare.com/data/v2/histoday?fsym={self.criptomoeda}&tsym=BRL&allData=true&api_key=53d41b3b5d49f3b5dba9daa9cb4f60848f537f53de8284c2e169324dca23bc9c")
+                if self.requisicao.status_code == 200:
+                    self.dados = self.requisicao.json()
+                    if self.dados["Response"] == "Success":
+                        self.corrige_os_dados_externos()
+                        if self.criptomoeda == "BTC":
+                            self.salva_os_dados_externos("modelDataSets/bitcoin.csv")
+                        elif self.criptomoeda == "ETH":
+                            self.salva_os_dados_externos("modelDataSets/ethereum.csv")
+                        elif self.criptomoeda == "SOL":
+                            self.salva_os_dados_externos("modelDataSets/solana.csv")
+                    else:
+                        raise ValueError("Dados incorretos!")
+                else:
+                    raise ValueError("Problema na conexão!")
+            except req.exceptions.RequestException:
+                if self.criptomoeda == "BTC":
+                    self.get_dados_internos("DataSets/bitcoin_data.csv")
+                elif self.criptomoeda == "ETH":
+                    self.get_dados_internos("DataSets/ethereum_data.csv")
+                elif self.criptomoeda == "SOL":
+                    self.get_dados_internos("modelDataSets/solana.csv")
         else:
-            self.df.Data = pd.to_datetime(self.df.Data)
-            self.df.set_index("Data", inplace= True)
+            raise ValueError("Essa função não está disponível para essa criptomoeda!")
+            
+    def corrige_os_dados_externos(self):
+        """
+        Corrige os dados externos obtidos da API.
+
+        Converte os dados em um DataFrame Pandas, ajusta os tipos de dados,
+        define a coluna 'Data' como índice e filtra os dados após a linha 2482.
+        """
+        self.df = pd.DataFrame([self.dados["Data"]["Data"][n]["time"] for n in range(len(self.dados["Data"]["Data"]))], columns=["time"])
+        self.df["Open"] = [self.dados["Data"]["Data"][n]["open"] for n in range(len(self.dados["Data"]["Data"]))]
+        self.df["High"] = [self.dados["Data"]["Data"][n]["high"] for n in range(len(self.dados["Data"]["Data"]))]
+        self.df["Low"] = [self.dados["Data"]["Data"][n]["low"] for n in range(len(self.dados["Data"]["Data"]))]
+        self.df["Price"] = [self.dados["Data"]["Data"][n]["close"] for n in range(len(self.dados["Data"]["Data"]))]
+        self.df["Volume"] = [self.dados["Data"]["Data"][n]["volumeto"] for n in range(len(self.dados["Data"]["Data"]))]       
+        self.df.time = self.df.time.astype(int)
+        for i in range(len(self.df)):
+            self.df.loc[i, "Data"] = datetime.fromtimestamp(self.df.loc[i, "time"]).date()
+        self.df = self.df.loc[2482:, :]
+        self.df.Data = pd.to_datetime(self.df.Data)      
+        self.df.set_index('Data', inplace=True)
+        self.df = self.df.drop(columns=["time"])
+                
+    def salva_os_dados_externos(self, caminho: str):
+        """
+        Salva os dados corrigidos externos em um arquivo CSV.
+
+        Args:
+            caminho (str): Caminho relativo do arquivo CSV onde os dados serão salvos.
+
+        Raises:
+            ValueError: Se o caminho passado não existir.
+        """
+        relative_path = caminho
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        csv_path = os.path.join(script_dir, relative_path)
+        if os.path.exists(csv_path):
+            self.df.to_csv(csv_path)
+        else:
+            raise ValueError("O caminho passado não existe!")
+
+    def get_dados_internos(self, caminho: str):
+        """
+        Obtém dados internos de um arquivo CSV.
+
+        Args:
+            caminho (str): Caminho relativo do arquivo CSV de onde os dados serão obtidos.
+
+        Raises:
+            ValueError: Se o arquivo especificado não for encontrado.
+        """
+        relative_path = caminho
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        csv_path = os.path.join(script_dir, relative_path)
+        if os.path.exists(csv_path):
+            self.df = pd.read_csv(csv_path, delimiter=",")
+            self.corrige_os_dados_internos()
+        else:
+            raise ValueError("Arquivo não encontrado!")
+
+    def corrige_os_dados_internos(self):
+        """
+        Corrige os dados internos obtidos de um arquivo CSV.
+
+        Converte a coluna 'Data' para o tipo datetime e define-a como índice do DataFrame.
+        """
+        self.df.Data = pd.to_datetime(self.df.Data)
+        self.df.set_index("Data", inplace=True)
 
 class Dolar_data(Dados):
+    """
+    Classe para obtenção, correção e salvamento de dados históricos ou atuais da cotação do dólar.
 
-    def __init__(self, n, atual):
-        if atual == False:    
+    Esta classe herda da classe Dados.
+
+    Args:
+        n (int): Número de dias de histórico a serem obtidos.
+        atual (str): Se 'atual' for True, busca a cotação atual do dólar; caso contrário,
+                     busca o histórico de n dias.
+
+    Attributes:
+        requisicao (requests.Response): Resposta da requisição HTTP.
+        df (pandas.DataFrame): DataFrame para armazenamento e manipulação dos dados.
+    """
+
+    def __init__(self, n: int, atual: str):
+        """
+        Inicializa a classe Dolar_data.
+
+        Realiza uma requisição à API para obter os dados de histórico ou cotação atual do dólar.
+        Se a requisição for bem-sucedida, corrige os dados, salva-os externamente se for o caso,
+        ou recupera dados internos se houver falha na conexão.
+        Lança exceções se houver problemas na conexão ou se o arquivo especificado não for encontrado.
+
+        Args:
+            n (int): Número de dias de histórico a serem obtidos.
+            atual (str): Se 'atual' for True, busca a cotação atual do dólar; caso contrário,
+                         busca o histórico de n dias.
+
+        Raises:
+            ValueError: Se o caminho passado não existir.
+        """
+        if atual:    
             try:
                 self.requisicao = req.get(f"https://economia.awesomeapi.com.br/json/daily/USD-BRL/{n}")
                 if self.requisicao.status_code == 200:
                     self.df = pd.DataFrame(self.requisicao.json())
                     self.corrige_os_dados_externos()
-                    self.registra_os_dados("DataSets\dolar_data.csv")
+                    self.salva_os_dados_externos("DataSets/dolar_data.csv")
                 else:
-                    self.get_dados_internos("DataSets\dolar_data.csv")
+                    self.get_dados_internos("DataSets/dolar_data.csv")
             except req.exceptions.RequestException:
-                    self.get_dados_internos("DataSets\dolar_data.csv")
+                self.get_dados_internos("DataSets/dolar_data.csv")
         else:
             self.get_cotacao_atual()
         
-
     def corrige_os_dados_externos(self):
+        """
+        Corrige os dados externos obtidos da API.
+
+        Realiza ajustes nos tipos de dados, renomeia colunas e define a coluna 'Data' como índice.
+        """
         self.df = self.df.dropna(axis=1)
         self.df.timestamp = self.df.timestamp.astype(int)
         self.df["Data"] = self.df.timestamp
@@ -396,96 +415,67 @@ class Dolar_data(Dados):
         self.df.Compra = self.df.Compra.astype(float)
 
     def corrige_os_dados_internos(self):
+        """
+        Corrige os dados internos obtidos de um arquivo CSV.
 
+        Converte a coluna 'Data' para o tipo datetime e reordena o DataFrame em ordem crescente de datas.
+        """
         self.df.Data = pd.to_datetime(self.df.Data)
-        self.df.set_index("Data", inplace= True)
+        self.df.set_index("Data", inplace=True)
         self.df = self.df.iloc[::-1]
 
-    def registra_os_dados(self, locaDataSet):
+    def salva_os_dados_externos(self, locaDataSet: str):
+        """
+        Salva os dados corrigidos externos em um arquivo CSV.
+
+        Args:
+            locaDataSet (str): Caminho relativo do arquivo CSV onde os dados serão salvos.
+
+        Raises:
+            ValueError: Se o caminho passado não existir.
+        """
         relative_path = locaDataSet
         script_dir = os.path.dirname(os.path.abspath(__file__))
         csv_path = os.path.join(script_dir, relative_path)
         if os.path.exists(csv_path):
             self.df.to_csv(csv_path)
+        else:
+            raise ValueError("O caminho passado não está correto!")
 
-    def get_dados_internos(self, localDaset):
-            relative_path = localDaset
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            csv_path = os.path.join(script_dir, relative_path)
-            if os.path.exists(csv_path):
-                self.df = pd.read_csv(csv_path)
-                self.corrige_os_dados_internos()
+    def get_dados_internos(self, localDaset: str):
+        """
+        Obtém dados internos de um arquivo CSV.
+
+        Args:
+            localDaset (str): Caminho relativo do arquivo CSV de onde os dados serão obtidos.
+
+        Raises:
+            ValueError: Se o arquivo especificado não for encontrado.
+        """
+        relative_path = localDaset
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        csv_path = os.path.join(script_dir, relative_path)
+        if os.path.exists(csv_path):
+            self.df = pd.read_csv(csv_path)
+            self.corrige_os_dados_internos()
+        else:
+            raise ValueError("Arquivo não encontrado!")
     
     def get_cotacao_atual(self):
-            
+        """
+        Obtém a cotação atual do dólar.
+
+        Realiza uma requisição à API para obter a cotação atual do dólar em tempo real.
+        Se a requisição for bem-sucedida, corrige os dados e os armazena no DataFrame.
+        Lança uma exceção se houver problemas na conexão.
+        """
+        try:
             self.requisicao = req.get(f"https://economia.awesomeapi.com.br/json/last/USD-BRL")
             if self.requisicao.status_code == 200:
-                self.dados =self.requisicao.json()
+                self.dados = self.requisicao.json()
                 self.df = pd.DataFrame([self.dados["USDBRL"]])
-                print(self.df)
                 self.corrige_os_dados_externos()
             else:
-                self.df = f"Erro: {self.requisicao.status_code}"
-            
-class Criptomoedas_data(Dados):
-
-    def __init__(self, n, moeda, time, atual):
-        self.time = time
-        self.atual = atual
-        if atual == False:
-            self.req = req.get(f"https://min-api.cryptocompare.com/data/v2/histo{time}?fsym={moeda}&tsym=BRL&limit={n}&api_key=53d41b3b5d49f3b5dba9daa9cb4f60848f537f53de8284c2e169324dca23bc9c")
-            try:
-                if self.req.status_code == 200:
-                    self.dados = self.req.json()
-                    if self.dados["Response"] == "Success":
-                        self.corrige_os_dados_externos()
-                    else:
-                        self.df = self.dados["Message"]
-                else:
-                    self.df = f"Erro: {self.req.status_code}"
-            except req.exceptions.RequestException:
-                    self.df = "Sem internet"
-        else:
-            self.req = req.get(f"https://min-api.cryptocompare.com/data/v2/histominute?fsym={moeda}&tsym=BRL&limit=1&api_key=53d41b3b5d49f3b5dba9daa9cb4f60848f537f53de8284c2e169324dca23bc9c")
-            try:
-                if self.req.status_code == 200:
-                    self.dados = self.req.json()
-                    if self.dados["Response"] == "Success":
-                        self.corrige_os_dados_externos()
-                    else:
-                        self.df = self.dados["Message"]
-                else:
-                    self.df = f"Erro: {self.req.status_code}"
-            except req.exceptions.RequestException:
-                    self.df = "Sem internet"           
-
-    def corrige_os_dados_externos(self):
-        self.df = pd.DataFrame([self.dados["Data"]["Data"][n]["time"] for n in range(len(self.dados["Data"]["Data"]))], columns=["time"])
-        self.df["Open"] = [self.dados["Data"]["Data"][n]["open"] for n in range(len(self.dados["Data"]["Data"]))]
-        self.df["High"] = [self.dados["Data"]["Data"][n]["high"] for n in range(len(self.dados["Data"]["Data"]))]
-        self.df["Low"] = [self.dados["Data"]["Data"][n]["low"] for n in range(len(self.dados["Data"]["Data"]))]
-        self.df["Price"] = [self.dados["Data"]["Data"][n]["close"] for n in range(len(self.dados["Data"]["Data"]))]
-        self.df["Volume"] = [self.dados["Data"]["Data"][n]["volumeto"] for n in range(len(self.dados["Data"]["Data"]))]       
-        self.df.time = self.df.time.astype(int)
-        self.df["Data"] = pd.to_datetime(self.df.time)
-        if self.time == "day" and self.atual == False:
-            for n in range(len(self.df)):
-                    self.df.loc[n, "Data"] = datetime.fromtimestamp(self.df.loc[n, "time"]).date()
-            self.df = self.df.drop(columns=["time"])
-            self.df.set_index('Data', inplace=True)
-            self.df = self.df.iloc[::-1]
-        elif self.time == "hour" and self.atual == False:
-            for n in range(len(self.df)):
-                    self.df.loc[n, "Data"] = datetime.fromtimestamp(self.df.loc[n, "time"])
-            self.df = self.df.drop(columns=["time"])
-            self.df.set_index('Data', inplace=True)
-            self.df = self.df.iloc[::-1]
-        elif self.atual:
-            for n in range(len(self.df)):
-                    self.df.loc[n, "Data"] = datetime.fromtimestamp(self.df.loc[n, "time"]).time()
-            self.df = self.df.drop(columns=["time"])
-            self.df.set_index('Data', inplace=True)
-            self.df = self.df.iloc[::-1]
-
-    def corrige_os_dados_internos(self):
-        pass
+                raise ValueError("Problemas na conexão!")
+        except req.exceptions.RequestException:
+            raise ValueError("Problemas na conexão!")

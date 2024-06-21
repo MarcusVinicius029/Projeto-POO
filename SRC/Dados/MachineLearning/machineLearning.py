@@ -1,8 +1,7 @@
 import abc
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from statsmodels.tsa.arima.model import ARIMA
-import matplotlib.pyplot as plt
-import numpy as np
+import pandas as pd
 
 class Machine_Learning(abc.ABC):
     """
@@ -64,7 +63,7 @@ class Bitcoin_model(Machine_Learning):
 
         Define os atributos modelo_preco e y_pred_tot da classe.
         """
-        self.modelo_preco = ARIMA(self.df_alvo, order=(2, 1, 2), freq="D").fit()
+        self.modelo_preco = ARIMA(self.df_alvo, order=(1, 1, 25), freq="D").fit()
         self.y_pred_tot = self.modelo_preco.predict()
     
     def preve_valores(self, X):
@@ -77,11 +76,25 @@ class Bitcoin_model(Machine_Learning):
         X (dateTime): Data para a qual se quer fazer a previsão (Ano-Mês-Ano).
 
         Returns:
-        Series: DataFrame contendo as previsões.
-        """
-        self.y_pred = self.modelo_preco.forecast(X)
-        return round(self.y_pred, 2)
-    
+        DataFrame: DataFrame contendo as previsões.
+        """ 
+        if X != 1: 
+            self.y_pred = self.modelo_preco.forecast(X)
+            self.df_pred = pd.DataFrame(self.y_pred)
+            self.df_pred.index.name = "Data"
+            self.df_pred.index = pd.to_datetime(self.df_pred.index)
+            self.df_pred = self.df_pred.round(2)
+            return self.df_pred
+        else:
+            self.y_pred = self.modelo_preco.forecast(X)
+            self.df_pred = pd.DataFrame(self.y_pred)
+            self.df_pred.index.name = "Data"
+            self.df_pred.index = pd.to_datetime(self.df_pred.index)
+            self.df_pred["Price"] = self.df_pred
+            self.df_pred = self.df_pred.drop(columns=0)
+            self.df_pred = self.df_pred.round(2)
+            return self.df_pred
+
     def calcula_atributos_do_modelo(self, n):
         """
         Calcula e retorna atributos do modelo ARIMA.
@@ -148,11 +161,26 @@ class Ethereum_model(Machine_Learning):
         X (dateTime): Data para a qual se quer fazer a previsão (Ano-Mês-Ano).
 
         Returns:
-        Series: DataFrame contendo as previsões.
-        """
-        self.y_pred = self.modelo_preco.forecast(X)
-        return round(self.y_pred, 2)
-
+        DataFrame: DataFrame contendo as previsões.
+        """   
+        if X != 1: 
+            self.y_pred = self.modelo_preco.forecast(X)
+            self.df_pred = pd.DataFrame(self.y_pred)
+            self.df_pred.index.name = "Data"
+            self.df_pred.index = pd.to_datetime(self.df_pred.index)
+            self.df_pred = self.df_pred.round(2)
+            return self.df_pred
+        else:
+            self.y_pred = self.modelo_preco.forecast(X)
+            self.df_pred = pd.DataFrame(self.y_pred)
+            self.df_pred.index.name = "Data"
+            self.df_pred.index = pd.to_datetime(self.df_pred.index)
+            self.df_pred["Price"] = self.df_pred
+            self.df_pred = self.df_pred.drop(columns=0)
+            self.df_pred = self.df_pred.round(2)
+            return self.df_pred
+        
+    
     def calcula_atributos_do_modelo(self, n):
         """
         Calcula e retorna atributos do modelo ARIMA.
@@ -217,10 +245,25 @@ class Solana_model(Machine_Learning):
         X (dateTime): Data para a qual se quer fazer a previsão (Ano-Mês-Ano).
 
         Returns:
-        Series: DataFrame contendo as previsões.
-        """
-        self.y_pred = self.modelo_preco.forecast(X)
-        return round(self.y_pred, 2)
+        DataFrmae: DataFrame contendo as previsões.
+        """  
+        if X != 1: 
+            self.y_pred = self.modelo_preco.forecast(X)
+            self.df_pred = pd.DataFrame(self.y_pred)
+            self.df_pred.index.name = "Data"
+            self.df_pred.index = pd.to_datetime(self.df_pred.index)
+            self.df_pred = self.df_pred.round(2)
+            return self.df_pred
+        else:
+            self.y_pred = self.modelo_preco.forecast(X)
+            self.df_pred = pd.DataFrame(self.y_pred)
+            self.df_pred.index.name = "Data"
+            self.df_pred.index = pd.to_datetime(self.df_pred.index)
+            self.df_pred["Price"] = self.df_pred
+            self.df_pred = self.df_pred.drop(columns=0)
+            self.df_pred = self.df_pred.round(2)
+            return self.df_pred
+        
     
     def calcula_atributos_do_modelo(self, n):
         """
