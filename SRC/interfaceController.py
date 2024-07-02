@@ -66,7 +66,7 @@ class Interface:
         label_periodo.pack(pady=10)
 
         self.var_periodo = tk.StringVar()
-        periodos = [("Dia", "day"), ("Minutos", "minute"), ("Horas", "hour")]
+        periodos = [("Dia", "day"), ("Horas", "hour"), ("Minutos", "minute")]
         for texto, valor in periodos:
             radio = tk.Radiobutton(self.root, text=texto, variable=self.var_periodo, value=valor, font=("Arial", 12))
             radio.pack()  
